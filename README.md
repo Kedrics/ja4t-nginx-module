@@ -194,9 +194,10 @@ http {
 }
 ```
 
-# Create log directory
+# Create log directory and log
 ```bash
 sudo mkdir -p /var/log/nginx
+sudo touch /var/log/nginx/ja4t.log
 ```
 
 ### Step 6: Test and run NGINX
