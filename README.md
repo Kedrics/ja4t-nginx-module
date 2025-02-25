@@ -1,5 +1,5 @@
 # tcp-analysis-nginx-module
-NGINX module to calculate and log tcp-analysis fingerprints for TCP/TLS connections, including TCP RTT and TLS RTT, with configurable signature blocking and detailed connection metrics logging.
+NGINX module to calculate and log tcp_analysis fingerprints for TCP/TLS connections, including TCP RTT and TLS RTT, with configurable signature blocking and detailed connection metrics logging.
 
 I'll guide you through compiling and installing this NGINX module. Here's a step-by-step process:
 
@@ -11,7 +11,7 @@ sudo apt-get update
 sudo apt-get install -y build-essential libpcre3-dev zlib1g-dev libssl-dev libyaml-dev
 
 # Create a working directory
-git clone https://github.com/Kedrics/tcp-analysis-nginx-module.git
+git clone https://github.com/Kedrics/tcp_analysis-nginx-module.git
 ```
 
 ### Step 2: Download NGINX source code
@@ -26,14 +26,14 @@ tar -xzf nginx-1.24.0.tar.gz
 ### Step 3: Compile NGINX with the module
 
 ```bash
-cd ~/nginx-tcp-analysis-build/nginx-1.24.0
+cd ~/nginx-tcp_analysis-build/nginx-1.24.0
 
 # Configure with the module
 ./configure \
   --prefix=/usr/local/nginx \
   --with-compat \
   --with-http_ssl_module \
-  --add-dynamic-module=../tcp-analysis-nginx-module
+  --add-dynamic-module=../tcp_analysis-nginx-module
 
 # Compile
 make
@@ -42,15 +42,15 @@ sudo make install
 
 ### Step 4: Set up configuration files
 
-Create the tcp-analysis signatures file:
+Create the tcp_analysis signatures file:
 
 ```bash
 sudo mkdir -p /etc/nginx
-sudo nano /etc/nginx/tcp-analysis_signatures.yaml
+sudo nano /etc/nginx/tcp_analysis_signatures.yaml
 
 Paste the following:
-# tcp-analysis_signatures.yaml
-# List of tcp-analysis hashes to block
+# tcp_analysis_signatures.yaml
+# List of tcp_analysis hashes to block
 - 7c3b2d8e  # Example Windows 10 Chrome
 - a4f9c012  # Example Linux Firefox
 - 5e2b9d4a  # Example MacOS Safari
@@ -67,7 +67,7 @@ Paste the following:
 
 #user  nobody;
 worker_processes  1;
-load_module modules/ngx_http_tcp-analysis_module.so;
+load_module modules/ngx_http_tcp_analysis_module.so;
 error_log  logs/error.log debug;
 #error_log  logs/error.log  notice;
 #error_log  logs/error.log  info;
@@ -83,19 +83,19 @@ events {
 http {
     include       mime.types;
     default_type  application/octet-stream;
-    tcp-analysis_enabled on;
+    tcp_analysis_enabled on;
     
     #log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
     #                  '$status $body_bytes_sent "$http_referer" '
     #                  '"$http_user_agent" "$http_x_forwarded_for"';
 
     #access_log  logs/access.log  main;
-    # Load the tcp-analysis module
-    #load_module modules/ngx_http_tcp-analysis_module.so;
+    # Load the tcp_analysis module
+    #load_module modules/ngx_http_tcp_analysis_module.so;
     
-    # Global tcp-analysis settings
-    tcp-analysis_log_path /var/log/nginx/tcp-analysis.log;
-    tcp-analysis_config_file /etc/nginx/tcp-analysis_signatures.yaml;
+    # Global tcp_analysis settings
+    tcp_analysis_log_path /var/log/nginx/tcp_analysis.log;
+    tcp_analysis_config_file /etc/nginx/tcp_analysis_signatures.yaml;
 
     sendfile        on;
     #tcp_nopush     on;
@@ -112,7 +112,7 @@ http {
         #charset koi8-r;
 
         #access_log  logs/host.access.log  main;
-	tcp-analysis_enabled on;
+	tcp_analysis_enabled on;
         location / {
             root   html;
             index  index.html index.htm;
@@ -197,7 +197,7 @@ http {
 # Create log directory and log
 ```bash
 sudo mkdir -p /var/log/nginx
-sudo touch /var/log/nginx/tcp-analysis.log
+sudo touch /var/log/nginx/tcp_analysis.log
 ```
 
 ### Step 6: Test and run NGINX
@@ -219,11 +219,11 @@ sudo /usr/local/nginx/sbin/nginx
 Check if the module is loaded:
 
 ```bash
-sudo lsof -p $(cat /usr/local/nginx/logs/nginx.pid) | grep tcp-analysis
+sudo lsof -p $(cat /usr/local/nginx/logs/nginx.pid) | grep tcp_analysis
 ```
 
-Monitor the tcp-analysis log file:
+Monitor the tcp_analysis log file:
 
 ```bash
-sudo tail -f /var/log/nginx/tcp-analysis.log
+sudo tail -f /var/log/nginx/tcp_analysis.log
 ```
