@@ -97,65 +97,65 @@ struct tcp_info_l {
 #endif
 
 typedef struct {
-    ngx_array_t *ja4t_signatures;  /* Array of ngx_str_t */
+    ngx_array_t *tcp_analysis_signatures;  /* Array of ngx_str_t */
     ngx_str_t    log_path;
     ngx_flag_t   enabled;
-} ngx_http_ja4t_main_conf_t;
+} ngx_http_tcp_analysis_main_conf_t;
 
 typedef struct {
     ngx_flag_t   enabled;
     ngx_msec_t   tls_rtt;
-} ngx_http_ja4t_loc_conf_t;
+} ngx_http_tcp_analysis_loc_conf_t;
 
-static void *ngx_http_ja4t_create_main_conf(ngx_conf_t *cf);
-static void *ngx_http_ja4t_create_loc_conf(ngx_conf_t *cf);
-static char *ngx_http_ja4t_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child);
-static char *ngx_http_ja4t_yaml_config(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
-static ngx_int_t ngx_http_ja4t_init(ngx_conf_t *cf);
-static ngx_int_t ngx_http_ja4t_handler(ngx_http_request_t *r);
-static char *ngx_calc_ja4t_hash(ngx_connection_t *c, u_char *hash_buf, size_t buf_size);
-static ngx_int_t ngx_http_ja4t_log_tcp_info(ngx_http_request_t *r, ngx_connection_t *c, const char *ja4t_hash);
+static void *ngx_http_tcp_analysis_create_main_conf(ngx_conf_t *cf);
+static void *ngx_http_tcp_analysis_create_loc_conf(ngx_conf_t *cf);
+static char *ngx_http_tcp_analysis_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child);
+static char *ngx_http_tcp_analysis_yaml_config(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+static ngx_int_t ngx_http_tcp_analysis_init(ngx_conf_t *cf);
+static ngx_int_t ngx_http_tcp_analysis_handler(ngx_http_request_t *r);
+static char *ngx_calc_tcp_analysis_hash(ngx_connection_t *c, u_char *hash_buf, size_t buf_size);
+static ngx_int_t ngx_http_tcp_analysis_log_tcp_info(ngx_http_request_t *r, ngx_connection_t *c, const char *tcp_analysis_hash);
 
-static ngx_command_t ngx_http_ja4t_commands[] = {
-    { ngx_string("ja4t_enabled"),
+static ngx_command_t ngx_http_tcp_analysis_commands[] = {
+    { ngx_string("tcp_analysis_enabled"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
       ngx_conf_set_flag_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
-      offsetof(ngx_http_ja4t_loc_conf_t, enabled),
+      offsetof(ngx_http_tcp_analysis_loc_conf_t, enabled),
       NULL },
 
-    { ngx_string("ja4t_config_file"),
+    { ngx_string("tcp_analysis_config_file"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
-      ngx_http_ja4t_yaml_config,
+      ngx_http_tcp_analysis_yaml_config,
       NGX_HTTP_MAIN_CONF_OFFSET,
       0,
       NULL },
 
-    { ngx_string("ja4t_log_path"),
+    { ngx_string("tcp_analysis_log_path"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_str_slot,
       NGX_HTTP_MAIN_CONF_OFFSET,
-      offsetof(ngx_http_ja4t_main_conf_t, log_path),
+      offsetof(ngx_http_tcp_analysis_main_conf_t, log_path),
       NULL },
 
     ngx_null_command
 };
 
-static ngx_http_module_t ngx_http_ja4t_module_ctx = {
+static ngx_http_module_t ngx_http_tcp_analysis_module_ctx = {
     NULL,                               /* preconfiguration */
-    ngx_http_ja4t_init,                 /* postconfiguration */
-    ngx_http_ja4t_create_main_conf,     /* create main configuration */
+    ngx_http_tcp_analysis_init,                 /* postconfiguration */
+    ngx_http_tcp_analysis_create_main_conf,     /* create main configuration */
     NULL,                               /* init main configuration */
     NULL,                               /* create server configuration */
     NULL,                               /* merge server configuration */
-    ngx_http_ja4t_create_loc_conf,      /* create location configuration */
-    ngx_http_ja4t_merge_loc_conf        /* merge location configuration */
+    ngx_http_tcp_analysis_create_loc_conf,      /* create location configuration */
+    ngx_http_tcp_analysis_merge_loc_conf        /* merge location configuration */
 };
 
-ngx_module_t ngx_http_ja4t_module = {
+ngx_module_t ngx_http_tcp_analysis_module = {
     NGX_MODULE_V1,
-    &ngx_http_ja4t_module_ctx,          /* module context */
-    ngx_http_ja4t_commands,             /* module directives */
+    &ngx_http_tcp_analysis_module_ctx,          /* module context */
+    ngx_http_tcp_analysis_commands,             /* module directives */
     NGX_HTTP_MODULE,                    /* module type */
     NULL,                               /* init master */
     NULL,                               /* init module */
@@ -168,17 +168,17 @@ ngx_module_t ngx_http_ja4t_module = {
 };
 
 static void *
-ngx_http_ja4t_create_main_conf(ngx_conf_t *cf)
+ngx_http_tcp_analysis_create_main_conf(ngx_conf_t *cf)
 {
-    ngx_http_ja4t_main_conf_t *conf;
+    ngx_http_tcp_analysis_main_conf_t *conf;
 
-    conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_ja4t_main_conf_t));
+    conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_tcp_analysis_main_conf_t));
     if (conf == NULL) {
         return NULL;
     }
 
-    conf->ja4t_signatures = ngx_array_create(cf->pool, 10, sizeof(ngx_str_t));
-    if (conf->ja4t_signatures == NULL) {
+    conf->tcp_analysis_signatures = ngx_array_create(cf->pool, 10, sizeof(ngx_str_t));
+    if (conf->tcp_analysis_signatures == NULL) {
         return NULL;
     }
 
@@ -188,11 +188,11 @@ ngx_http_ja4t_create_main_conf(ngx_conf_t *cf)
 }
 
 static void *
-ngx_http_ja4t_create_loc_conf(ngx_conf_t *cf)
+ngx_http_tcp_analysis_create_loc_conf(ngx_conf_t *cf)
 {
-    ngx_http_ja4t_loc_conf_t *conf;
+    ngx_http_tcp_analysis_loc_conf_t *conf;
 
-    conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_ja4t_loc_conf_t));
+    conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_tcp_analysis_loc_conf_t));
     if (conf == NULL) {
         return NULL;
     }
@@ -203,10 +203,10 @@ ngx_http_ja4t_create_loc_conf(ngx_conf_t *cf)
     return conf;
 }
 static char *
-ngx_http_ja4t_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
+ngx_http_tcp_analysis_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 {
-    ngx_http_ja4t_loc_conf_t *prev = parent;
-    ngx_http_ja4t_loc_conf_t *conf = child;
+    ngx_http_tcp_analysis_loc_conf_t *prev = parent;
+    ngx_http_tcp_analysis_loc_conf_t *conf = child;
 
     ngx_conf_merge_value(conf->enabled, prev->enabled, 0);
 
@@ -214,9 +214,9 @@ ngx_http_ja4t_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 }
 
 static char *
-ngx_http_ja4t_yaml_config(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+ngx_http_tcp_analysis_yaml_config(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_http_ja4t_main_conf_t *jmcf = conf;
+    ngx_http_tcp_analysis_main_conf_t *jmcf = conf;
     ngx_str_t *value;
     FILE *file;
     yaml_parser_t parser;
@@ -228,7 +228,7 @@ ngx_http_ja4t_yaml_config(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     file = fopen((const char *)value[1].data, "rb");
     if (file == NULL) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "failed to open JA4T configuration file: %s", value[1].data);
+                           "failed to open tcp_analysis configuration file: %s", value[1].data);
         return NGX_CONF_ERROR;
     }
     
@@ -249,8 +249,8 @@ ngx_http_ja4t_yaml_config(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         switch(token.type) {
             case YAML_SCALAR_TOKEN:
                 if (in_item) {
-                    /* This is a JA4T signature value */
-                    signature = ngx_array_push(jmcf->ja4t_signatures);
+                    /* This is a tcp_analysis signature value */
+                    signature = ngx_array_push(jmcf->tcp_analysis_signatures);
                     if (signature == NULL) {
                         yaml_token_delete(&token);
                         yaml_parser_delete(&parser);
@@ -300,7 +300,7 @@ ngx_http_ja4t_yaml_config(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 static ngx_int_t
-ngx_http_ja4t_init(ngx_conf_t *cf)
+ngx_http_tcp_analysis_init(ngx_conf_t *cf)
 {
     ngx_http_handler_pt        *h;
     ngx_http_core_main_conf_t  *cmcf;
@@ -312,13 +312,13 @@ ngx_http_ja4t_init(ngx_conf_t *cf)
         return NGX_ERROR;
     }
 
-    *h = ngx_http_ja4t_handler;
+    *h = ngx_http_tcp_analysis_handler;
 
     return NGX_OK;
 }
 
 static char *
-ngx_calc_ja4t_hash(ngx_connection_t *c, u_char *hash_buf, size_t buf_size)
+ngx_calc_tcp_analysis_hash(ngx_connection_t *c, u_char *hash_buf, size_t buf_size)
 {
     struct tcp_info_l tcp_info;
     socklen_t tcp_info_len = sizeof(tcp_info);
@@ -372,10 +372,10 @@ ngx_calc_ja4t_hash(ngx_connection_t *c, u_char *hash_buf, size_t buf_size)
 }
 
 static ngx_int_t
-ngx_http_ja4t_log_tcp_info(ngx_http_request_t *r, ngx_connection_t *c, const char *ja4t_hash)
+ngx_http_tcp_analysis_log_tcp_info(ngx_http_request_t *r, ngx_connection_t *c, const char *tcp_analysis_hash)
 {
-    ngx_http_ja4t_main_conf_t *jmcf;
-    ngx_http_ja4t_loc_conf_t  *jlcf;
+    ngx_http_tcp_analysis_main_conf_t *jmcf;
+    ngx_http_tcp_analysis_loc_conf_t  *jlcf;
     struct tcp_info_l tcp_info;
     socklen_t tcp_info_len = sizeof(tcp_info);
     u_char *p;
@@ -385,8 +385,8 @@ ngx_http_ja4t_log_tcp_info(ngx_http_request_t *r, ngx_connection_t *c, const cha
     u_char time_buf[32];
     struct tm tm;
 
-    jmcf = ngx_http_get_module_main_conf(r, ngx_http_ja4t_module);
-    jlcf = ngx_http_get_module_loc_conf(r, ngx_http_ja4t_module);
+    jmcf = ngx_http_get_module_main_conf(r, ngx_http_tcp_analysis_module);
+    jlcf = ngx_http_get_module_loc_conf(r, ngx_http_tcp_analysis_module);
 
     if (jmcf->log_path.len == 0) {
         return NGX_OK;
@@ -421,11 +421,11 @@ ngx_http_ja4t_log_tcp_info(ngx_http_request_t *r, ngx_connection_t *c, const cha
     }
 
     total_len += snprintf((char *)p + total_len, len - total_len, 
-                          "IP: %.*s, JA4T: %s", 
-                          (int)c->addr_text.len, c->addr_text.data, ja4t_hash);
+                          "IP: %.*s, tcp_analysis: %s", 
+                          (int)c->addr_text.len, c->addr_text.data, tcp_analysis_hash);
 
     if (total_len >= len) {
-        ngx_log_error(NGX_LOG_ERR, c->log, 0, "Log buffer overflow at IP/JA4T");
+        ngx_log_error(NGX_LOG_ERR, c->log, 0, "Log buffer overflow at IP/tcp_analysis");
         return NGX_ERROR;
     }
 
@@ -483,45 +483,45 @@ ngx_http_ja4t_log_tcp_info(ngx_http_request_t *r, ngx_connection_t *c, const cha
 
     fd = ngx_open_file(jmcf->log_path.data, NGX_FILE_APPEND, NGX_FILE_CREATE_OR_OPEN, NGX_FILE_DEFAULT_ACCESS);
     if (fd == NGX_INVALID_FILE) {
-        ngx_log_error(NGX_LOG_ERR, c->log, errno, "Failed to open JA4T log file: %V", &jmcf->log_path);
+        ngx_log_error(NGX_LOG_ERR, c->log, errno, "Failed to open tcp_analysis log file: %V", &jmcf->log_path);
         return NGX_ERROR;
     }
 
     ssize_t written = ngx_write_fd(fd, p, total_len);
     if (written == NGX_ERROR || (size_t)written != total_len) {
-        ngx_log_error(NGX_LOG_ERR, c->log, errno, "Failed to write full JA4T log: wrote %z of %z bytes", written, total_len);
+        ngx_log_error(NGX_LOG_ERR, c->log, errno, "Failed to write full tcp_analysis log: wrote %z of %z bytes", written, total_len);
         ngx_close_file(fd);
         return NGX_ERROR;
     }
 
     ngx_close_file(fd);
-    ngx_log_debug(NGX_LOG_DEBUG_HTTP, c->log, 0, "JA4T log: %s", p);
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP, c->log, 0, "tcp_analysis log: %s", p);
 
     return NGX_OK;
 }
 static ngx_int_t
-ngx_http_ja4t_handler(ngx_http_request_t *r)
+ngx_http_tcp_analysis_handler(ngx_http_request_t *r)
 {
-    ngx_http_ja4t_loc_conf_t   *jlcf;
-    ngx_http_ja4t_main_conf_t  *jmcf;
+    ngx_http_tcp_analysis_loc_conf_t   *jlcf;
+    ngx_http_tcp_analysis_main_conf_t  *jmcf;
     ngx_str_t                  *signature;
     ngx_uint_t                   i;
-    u_char                      ja4t_hash_buf[9];
-    char                       *ja4t_hash;
+    u_char                      tcp_analysis_hash_buf[9];
+    char                       *tcp_analysis_hash;
 
-    jlcf = ngx_http_get_module_loc_conf(r, ngx_http_ja4t_module);
-    jmcf = ngx_http_get_module_main_conf(r, ngx_http_ja4t_module);
+    jlcf = ngx_http_get_module_loc_conf(r, ngx_http_tcp_analysis_module);
+    jmcf = ngx_http_get_module_main_conf(r, ngx_http_tcp_analysis_module);
 
     if (!jlcf->enabled) {
         return NGX_DECLINED;
     }
 
-    ja4t_hash = ngx_calc_ja4t_hash(r->connection, ja4t_hash_buf, sizeof(ja4t_hash_buf));
-    if (ja4t_hash == NULL) {
+    tcp_analysis_hash = ngx_calc_tcp_analysis_hash(r->connection, tcp_analysis_hash_buf, sizeof(tcp_analysis_hash_buf));
+    if (tcp_analysis_hash == NULL) {
         return NGX_DECLINED;
     }
 
-    ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "Calculated JA4T hash: %s", ja4t_hash);
+    ngx_log_debug(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "Calculated tcp_analysis hash: %s", tcp_analysis_hash);
 
     // Calculate TLS RTT if this is an SSL connection
     if (r->connection->ssl) {
@@ -540,15 +540,15 @@ ngx_http_ja4t_handler(ngx_http_request_t *r)
         jlcf->tls_rtt = 0; // No TLS RTT for non-SSL connections
     }
 
-    ngx_http_ja4t_log_tcp_info(r, r->connection, ja4t_hash);
+    ngx_http_tcp_analysis_log_tcp_info(r, r->connection, tcp_analysis_hash);
 
-    signature = jmcf->ja4t_signatures->elts;
-    for (i = 0; i < jmcf->ja4t_signatures->nelts; i++) {
+    signature = jmcf->tcp_analysis_signatures->elts;
+    for (i = 0; i < jmcf->tcp_analysis_signatures->nelts; i++) {
         if (signature[i].len == 8 && 
-            ngx_strncmp(ja4t_hash, signature[i].data, 8) == 0) {
+            ngx_strncmp(tcp_analysis_hash, signature[i].data, 8) == 0) {
             ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
-                         "Blocked connection from %V with JA4T hash: %s",
-                         &r->connection->addr_text, ja4t_hash);
+                         "Blocked connection from %V with tcp_analysis hash: %s",
+                         &r->connection->addr_text, tcp_analysis_hash);
             return NGX_HTTP_FORBIDDEN;
         }
     }
